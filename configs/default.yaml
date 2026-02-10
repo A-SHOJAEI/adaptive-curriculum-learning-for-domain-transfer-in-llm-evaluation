@@ -1,0 +1,117 @@
+# Default configuration for adaptive curriculum learning
+
+# Data configuration
+data:
+  dataset_name: "cais/mmlu"
+  cache_dir: "./data_cache"
+  max_samples_per_domain: 100  # Limit for feasible training
+  validation_split: 0.1
+  test_split: 0.2
+  random_seed: 42
+
+# Model configuration
+model:
+  name: "distilgpt2"  # Small model for feasible training
+  max_length: 256
+  use_adapter: true
+  adapter_rank: 8
+  adapter_alpha: 16
+  dropout: 0.1
+  # Model initialization parameters
+  embedding_init_std: 0.02
+  # EWC (Elastic Weight Consolidation) parameters
+  ewc_lambda: 0.1
+  # Loss combination weights
+  domain_adversarial_weight: 0.1
+  difficulty_loss_weight: 0.1
+
+# Curriculum learning configuration
+curriculum:
+  difficulty_metric: "entropy"  # entropy, confidence, loss
+  similarity_metric: "sentence_embeddings"  # sentence_embeddings, domain_keywords
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  curriculum_strategy: "adaptive"  # adaptive, fixed, random
+  difficulty_window: 0.3  # proportion of easy samples to start with
+  similarity_threshold: 0.3  # Lowered for small dataset
+  curriculum_pace: "linear"  # linear, exponential, adaptive
+  forgetting_penalty: 0.1
+  # Curriculum scheduler parameters
+  total_steps: 500
+  # Domain similarity computation parameters
+  max_domain_questions: 50  # For efficiency in similarity computation
+  max_tfidf_features: 500
+
+# Training configuration
+training:
+  batch_size: 4
+  gradient_accumulation_steps: 2
+  learning_rate: 0.00005
+  num_epochs: 5
+  warmup_steps: 50
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  fp16: true
+  dataloader_num_workers: 0
+  save_steps: 200
+  eval_steps: 50
+  logging_steps: 10
+  save_total_limit: 2
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.001
+  # Optimizer parameters
+  optimizer_betas: [0.9, 0.999]
+  optimizer_eps: 0.00000001
+  # Padding token for labels
+  label_pad_token_id: -100
+  # Attention padding token
+  attention_pad_token_id: 0
+
+# Evaluation configuration
+evaluation:
+  metrics:
+    - "accuracy"
+    - "cross_domain_transfer_gain"
+    - "forgetting_rate"
+    - "curriculum_efficiency_ratio"
+  source_domains:
+    - "STEM"
+  target_domains:
+    - "Humanities"
+  baseline_training_steps: 500
+  # Statistical evaluation parameters
+  bootstrap_samples: 100
+  confidence_interval: [2.5, 97.5]
+  # Target metrics for comparison
+  target_metrics:
+    cross_domain_transfer_gain: 0.15
+    forgetting_rate_reduction: 0.4
+    curriculum_efficiency_ratio: 2.5
+    average_mmlu_accuracy: 0.72
+  # Baseline estimation parameters
+  baseline_accuracy_multiplier: 0.8
+  estimated_random_accuracy: 0.25
+
+# MLflow configuration
+mlflow:
+  experiment_name: "adaptive_curriculum_learning"
+  tracking_uri: "mlruns"
+  artifact_location: "mlartifacts"
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  save_to_file: true
+  log_file: "training.log"
+
+# Hardware configuration
+device:
+  use_cuda: true
+  cuda_device: 0
+  mixed_precision: true
+
+# Reproducibility
+seed: 42

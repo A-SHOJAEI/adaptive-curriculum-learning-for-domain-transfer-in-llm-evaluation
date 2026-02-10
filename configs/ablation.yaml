@@ -1,0 +1,108 @@
+# Ablation configuration: Testing without domain adversarial training
+# This config removes the domain adversarial component to measure its impact on transfer learning
+
+# Data configuration (same as default)
+data:
+  dataset_name: "cais/mmlu"
+  cache_dir: "./data_cache"
+  max_samples_per_domain: 100
+  validation_split: 0.1
+  test_split: 0.2
+  random_seed: 42
+
+# Model configuration - NO domain adversarial training
+model:
+  name: "distilgpt2"
+  max_length: 256
+  use_adapter: true
+  adapter_rank: 8
+  adapter_alpha: 16
+  dropout: 0.1
+  embedding_init_std: 0.02
+  ewc_lambda: 0.1
+  # ABLATION: Disable domain adversarial training
+  domain_adversarial_weight: 0.0  # Changed from 0.1 to 0.0
+  difficulty_loss_weight: 0.1
+
+# Curriculum learning configuration (same as default)
+curriculum:
+  difficulty_metric: "entropy"
+  similarity_metric: "sentence_embeddings"
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  curriculum_strategy: "adaptive"
+  difficulty_window: 0.3
+  similarity_threshold: 0.3
+  curriculum_pace: "linear"
+  forgetting_penalty: 0.1
+  total_steps: 500
+  max_domain_questions: 50
+  max_tfidf_features: 500
+
+# Training configuration (same as default)
+training:
+  batch_size: 4
+  gradient_accumulation_steps: 2
+  learning_rate: 0.00005
+  num_epochs: 5
+  warmup_steps: 50
+  weight_decay: 0.01
+  max_grad_norm: 1.0
+  fp16: true
+  dataloader_num_workers: 0
+  save_steps: 200
+  eval_steps: 50
+  logging_steps: 10
+  save_total_limit: 2
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  early_stopping_patience: 3
+  early_stopping_threshold: 0.001
+  optimizer_betas: [0.9, 0.999]
+  optimizer_eps: 0.00000001
+  label_pad_token_id: -100
+  attention_pad_token_id: 0
+
+# Evaluation configuration (same as default)
+evaluation:
+  metrics:
+    - "accuracy"
+    - "cross_domain_transfer_gain"
+    - "forgetting_rate"
+    - "curriculum_efficiency_ratio"
+  source_domains:
+    - "STEM"
+  target_domains:
+    - "Humanities"
+  baseline_training_steps: 500
+  bootstrap_samples: 100
+  confidence_interval: [2.5, 97.5]
+  target_metrics:
+    cross_domain_transfer_gain: 0.15
+    forgetting_rate_reduction: 0.4
+    curriculum_efficiency_ratio: 2.5
+    average_mmlu_accuracy: 0.72
+  baseline_accuracy_multiplier: 0.8
+  estimated_random_accuracy: 0.25
+
+# MLflow configuration (same as default)
+mlflow:
+  experiment_name: "adaptive_curriculum_learning_ablation"
+  tracking_uri: "mlruns"
+  artifact_location: "mlartifacts"
+
+# Logging configuration (same as default)
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  save_to_file: true
+  log_file: "training_ablation.log"
+
+# Hardware configuration (same as default)
+device:
+  use_cuda: true
+  cuda_device: 0
+  mixed_precision: true
+
+# Reproducibility (same as default)
+seed: 42
