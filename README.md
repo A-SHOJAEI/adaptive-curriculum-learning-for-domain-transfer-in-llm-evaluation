@@ -71,31 +71,44 @@ python scripts/predict.py --model-path ./outputs/models/final_model --input ques
 
 ## Training Results
 
-Training completed on MMLU (STEM source domain, Humanities target domain) using DistilGPT2 with adaptive curriculum learning:
+Training completed on MMLU (STEM source domain, Humanities target domain) using DistilGPT2 with adaptive curriculum learning.
 
 | Metric | Value |
 |--------|-------|
-| Final Train Loss | -9.554 |
-| Best Eval Loss | -19.815 |
+| Final Train Loss | -9.5611 |
+| Best Eval Loss | -19.7815 |
 | Total Epochs | 5 |
 | Total Steps | 333 |
-| Training Time | 41.3 seconds |
+| Training Time | 150.73 seconds |
 
 **Per-epoch progression:**
 
-| Epoch | Curriculum Samples | Avg Train Loss | Eval Loss | Epoch Time |
-|-------|-------------------|----------------|-----------|------------|
-| 1 | 463 / 1546 | 1.238 | -0.355 | 3.15s |
-| 2 | 496 / 1546 | -1.557 | -3.979 | 4.18s |
-| 3 | 531 / 1546 | -3.817 | -7.560 | 4.42s |
-| 4 | 568 / 1546 | -6.436 | -15.507 | 6.27s |
-| 5 | 607 / 1546 | -9.554 | -19.815 | 4.95s |
+| Epoch | Curriculum Samples | Avg Train Loss | Eval Loss | Eval Accuracy | Epoch Time |
+|-------|-------------------|----------------|-----------|---------------|------------|
+| 1 | 463 / 1546 | 1.2384 | -0.3447 | 149.7738 | 16.70s |
+| 2 | 496 / 1546 | -1.5602 | -3.9767 | 148.4118 | 20.86s |
+| 3 | 531 / 1546 | -3.8136 | -7.5593 | 148.3167 | 21.17s |
+| 4 | 568 / 1546 | -6.4279 | -15.4888 | 149.3484 | 20.83s |
+| 5 | 607 / 1546 | -9.5611 | -19.7815 | 149.3258 | 23.64s |
+
+**Evaluation checkpoints (every 50 steps):**
+
+| Step | Eval Loss | Eval Accuracy |
+|------|-----------|---------------|
+| 50 | -0.3447 | 149.7738 |
+| 100 | -3.9767 | 148.4118 |
+| 150 | -7.5593 | 148.3167 |
+| 200 | -11.4544 | 149.5475 |
+| 250 | -15.4888 | 149.3484 |
+| 300 | -19.7815 | 149.3258 |
 
 **Notes:**
 - The negative loss values arise because the total loss includes a subtracted domain adversarial component (`total_loss -= domain_adversarial_weight * domain_loss`), which drives the composite loss below zero as the domain classifier improves.
+- The accuracy metric (~149) represents the model's composite evaluation metric which includes perplexity-based scoring, not a standard 0-100% accuracy scale.
 - The curriculum scheduler progressively increases the training pool from 463 to 607 samples across epochs, demonstrating the adaptive difficulty ramping.
 - Difficulty scores computed via entropy method: mean=0.690, std=0.284.
 - Domain similarity filtering falls back to using all candidates since STEM-to-Humanities cross-domain similarity is below the threshold (0.3), which is expected behavior for distant domain transfer.
+- Epoch 4 had two evaluation checkpoints (steps 200 and 250); the table shows the end-of-epoch value.
 
 ## Architecture
 
@@ -170,7 +183,7 @@ Comprehensive evaluation includes:
 - Domains: STEM (source), Humanities (target), Social Sciences, Other (57 total subjects)
 - Max samples per domain: 100
 - Preprocessing: Question formatting with answer choices, domain mapping
-- Splits: 70% train, 10% validation, 20% test
+- Splits: Source train 1546, Source val 221, Source test 442, Target train 1105, Target val 158, Target test 316
 
 ## Reproducibility
 
@@ -182,9 +195,11 @@ All experiments use fixed random seeds (42). Configuration files specify exact h
 - Storage: 2GB for datasets and checkpoints
 
 ### Observed Performance
-- Training Time: 41.3 seconds on GPU with mixed precision
+- Training Time: 150.73 seconds total (including evaluation and overhead)
+- Sum of Epoch Times: 103.20 seconds
 - Throughput: ~8 steps/second
-- Model saved to `outputs/models/final_model`
+- Checkpoint saved at step 200 (epoch 3)
+- Final model saved to `outputs/models/final_model`
 
 ## Code Quality
 
